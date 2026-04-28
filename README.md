@@ -1,3 +1,5 @@
+![Project Preview](Mitogenome_picture.png)
+
 #Mitogenome assembly and annotation, and phylegenetic tree construction
 
 #Description
