@@ -1,18 +1,18 @@
 #Mitogenome assembly and annotation, and phylegenetic tree construction
 
 #Description
-This project involved the assembly and annotation of the mitochondrial genome of Poroderma africanum, a catshark species endemic to southern Africa. Raw sequencing data were processed to generate a complete mitogenome, which was then annotated to identify key genomic features, including protein-coding genes, ribosomal RNAs, transfer RNAs, and control regions.
+1. This project involved the assembly and annotation of the mitochondrial genome of Poroderma africanum, a catshark species endemic to southern Africa. Raw sequencing data were processed to generate a complete mitogenome, which was then annotated to identify key genomic features, including protein-coding genes, ribosomal RNAs, transfer RNAs, and control regions.
 
-To investigate evolutionary relationships, the annotated mitogenome was incorporated into a comparative dataset comprising mitochondrial genomes from 59 shark species. Multiple sequence alignment and phylogenetic analyses were performed to construct a phylogenomic tree, providing insights into species divergence and evolutionary patterns within elasmobranchs. The resulting tree highlights the phylogenetic placement of P. africanum and contributes to a broader understanding of shark evolutionary history.
+2. To investigate evolutionary relationships, the annotated mitogenome was incorporated into a comparative dataset comprising mitochondrial genomes from 59 shark species. Multiple sequence alignment and phylogenetic analyses were performed to construct a phylogenomic tree, providing insights into species divergence and evolutionary patterns within elasmobranchs. The resulting tree highlights the phylogenetic placement of P. africanum and contributes to a broader understanding of shark evolutionary history.
 
 #Objectives
--To assemble the complete mitochondrial genome of Poroderma africanum from raw sequencing data.
--To accurately annotate the mitogenome by identifying protein-coding genes, rRNAs, tRNAs, and regulatory regions.
--To compile a comparative dataset of mitochondrial genomes from 59 shark species.
--To perform multiple sequence alignment of mitogenomic data for phylogenetic analysis.
--To construct a robust phylogenomic tree to infer evolutionary relationships among shark species.
--To determine the phylogenetic placement of P. africanum within the broader elasmobranch lineage.
--To contribute to the understanding of shark evolution and mitochondrial genome diversity.
+1. To assemble the complete mitochondrial genome of Poroderma africanum from raw sequencing data.
+2. To accurately annotate the mitogenome by identifying protein-coding genes, rRNAs, tRNAs, and regulatory regions.
+3. To compile a comparative dataset of mitochondrial genomes from 59 shark species.
+4. To perform multiple sequence alignment of mitogenomic data for phylogenetic analysis.
+5. To construct a robust phylogenomic tree to infer evolutionary relationships among shark species.
+6. To determine the phylogenetic placement of P. africanum within the broader elasmobranch lineage.
+7. To contribute to the understanding of shark evolution and mitochondrial genome diversity.
 
 #Tools & Technologies
 - Minimap
