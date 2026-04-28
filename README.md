@@ -34,13 +34,13 @@ git clone https://github.com/ksekane/Mitogenome-assembly-and-annotation.git
 cd Mitogenome-assembly-and-annotation
 
 2. Install dependencies
-Minimap (map sewuencing reads to reference mitogenome)
-Flye(assembly into contigs)
-MitoHifi (assembly into mitogenome)
-MitoAnnotator (annotation)
-Seqkit (removing tRNA, rRNA, and control regions and keeping protein coding genes)
-MAFFT (alignment)
-MrBayes (tree construction)
+- Minimap (map sewuencing reads to reference mitogenome)
+- Flye(assembly into contigs)
+- MitoHifi (assembly into mitogenome)
+- MitoAnnotator (annotation)
+- Seqkit (removing tRNA, rRNA, and control regions and keeping protein coding genes)
+- MAFFT (alignment)
+- MrBayes (tree construction)
 
 3. Map raw reads to reference mitogenome
 4. Assemble mitogenome
