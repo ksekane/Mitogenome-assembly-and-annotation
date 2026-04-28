@@ -1,0 +1,465 @@
+Mapping raw reads to reference genome using minimap (https://github.com/lh3/minimap2)
+
+Script/Method
+#!/bin/bash
+#PBS -N mapping
+#PBS -l select=1:ncpus=24:mpiprocs=24:mem=80GB 
+#PBS -l walltime=48:00:00 
+#PBS -q smp 
+#PBS -P CBBI1661 
+#PBS -e 1_mp.err 
+#PBS -o 1_mp.out 
+#PBS -M u22536770@tuks.co.za 
+#PBS -m abe
+
+# modules #
+module load chpc/BIOMODULES
+module load minimap2/2.24
+
+# Variables #
+raw=/mnt/lustre/users/ksekane/raw/
+work=/mnt/lustre/users/ksekane/mapping/
+
+# align data #
+cd ${work}
+minimap2 -ax map-hifi ${work}/PPantherinum_sequence.fasta ${raw}/*.fastq.gz > mapping1.sam
+
+
+Results
+Received a mapping file in a sam file using a walltime of 40 minutes 38 seconds 
+View using less mapping1.sam
+
+Assemble the reads into a mitogenome using Flye/2.9.5
+
+Script/Method
+1. First convert the sam file into a fasta file as Flye uses fasta files:
+command line: awk '!/^@/ {print ">"$1"\n"$10}' mapping1.sam > mapping1.fasta
+
+#!/bin/bash
+#PBS -N assembly
+#PBS -l select=1:ncpus=24:mpiprocs=24:mem=80GB
+#PBS -l walltime=48:00:00 
+#PBS -q smp
+#PBS -P CBBI1661
+#PBS -e 1_as.err
+#PBS -o 1_as.out
+#PBS -M u22536770@tuks.co.za
+#PBS -m abe
+
+# modules #
+module load chpc/BIOMODULES
+module load flye/2.9.5
+
+# assemble reads #
+cd /mnt/lustre/users/ksekane/assembly/
+flye --pacbio-raw mapping1.fasta --out-dir assembly --threads 24
+
+Received an assembly file in the form of a fasta, and gfa file
+
+Assembly and annotation
+
+Script/Method for Mitohifi
+Input was the assembled contigs recieved from the flye assembly
+
+alias qsubi="qsub -X -I -l select=1:ncpus=24:mpiprocs=24 -q serial -P CBBI1661 -l walltime=1:00:00"
+qsubi
+
+cd /mnt/lustre/users/ksekane/
+
+cd aasembly_flye
+
+module load chpc/BIOMODULES
+module load mitohifi
+
+$SIF mitohifi.py -c assembly.fasta -f sequence.fasta -g sequence.gb -t 24
+
+Results
+Recieved a linear annotated mitogenome of the P. africanum and fasta file of the full mitogenome of the P. africanum
+nnotation with MitoAnnotator
+
+Method
+Input: fasta file of the full mitogenome of the P. africanum
+
+Results
+Received a circularised annotated mitogenome of the P. africanum
+
+Way forward
+Analyse the mitogenome with close relatives to determine if it is correct
+
+Results:
+Mitogenome is correct
+
+Align mitogenomes with 8 orders of sharks for phylogenetic placement using MAFFT
+
+
+Removing ND6 and control regions
+
+Method/Script/Method
+
+Since ND6 region is 13887 bp to 14273 bp and the control region is from 15630 bp to 16692 bp then cut out those regions and keep:
+seqkit subseq -r 1:13886 PAfricanum_final_mitogenome.fasta > PAfricanum_final_mitogenome_part1.fasta
+seqkit subseq -r 14274:15630 PAfricanum_final_mitogenome.fasta > PAfricanum_final_mitogenome_part2.fasta
+
+To merge part 1 and part 2:
+seqkit concat PAfricanum_final_mitogenome_part1.fasta PAfricanum_final_mitogenome_part2.fasta > PAfricanum_mitogenomes_filtered.fasta
+
+7/09/2025
+
+Removing tRNA, rRNA, and control regions and keeping protein coding genes
+
+Method/Script
+
+seqkit subseq -r 2844:3818 Carcharhinus_amboinensis_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part1.fasta
+seqkit subseq -r 4030:5074 Carcharhinus_amboinensis_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part2.fasta
+seqkit subseq -r 5460:7016 Carcharhinus_amboinensis_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part3.fasta
+seqkit subseq -r 7168:7858 Carcharhinus_amboinensis_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part4.fasta
+seqkit subseq -r 7934:8101 Carcharhinus_amboinensis_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part5.fasta
+seqkit subseq -r 8092:8775 Carcharhinus_amboinensis_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part6.fasta
+seqkit subseq -r 8775:9560 Carcharhinus_amboinensis_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part7.fasta
+seqkit subseq -r 9633:9981 Carcharhinus_amboinensis_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part8.fasta
+seqkit subseq -r 10052:10348 Carcharhinus_amboinensis_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part9.fasta
+seqkit subseq -r 10342:11722 Carcharhinus_amboinensis_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part10.fasta
+seqkit subseq -r 11931:13760 Carcharhinus_amboinensis_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part11.fasta
+seqkit subseq -r 13756:14277 Carcharhinus_amboinensis_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part12.fasta
+seqkit subseq -r 14350:15494 Carcharhinus_amboinensis_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part13.fasta
+
+seqkit concat Carcharhinus_amboinensis_mitogenome_part1.fasta Carcharhinus_amboinensis_mitogenome_part2.fasta Carcharhinus_amboinensis_mitogenome_part3.fasta Carcharhinus_amboinensis_mitogenome_part4.fasta Carcharhinus_amboinensis_mitogenome_part5.fasta Carcharhinus_amboinensis_mitogenome_part6.fasta Carcharhinus_amboinensis_mitogenome_part7.fasta Carcharhinus_amboinensis_mitogenome_part8.fasta Carcharhinus_amboinensis_mitogenome_part9.fasta Carcharhinus_amboinensis_mitogenome_part10.fasta Carcharhinus_amboinensis_mitogenome_part11.fasta Carcharhinus_amboinensis_mitogenome_part12.fasta Carcharhinus_amboinensis_mitogenome_part13.fasta > Carcharhinus_amboinensis_mitogenomes_filtered.fasta
+
+seqkit subseq -r 2843:3817 Carcharhinus_brevipinna_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part1.fasta
+seqkit subseq -r 4029:5073 Carcharhinus_brevipinna_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part2.fasta
+seqkit subseq -r 5461:7017 Carcharhinus_brevipinna_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part3.fasta
+seqkit subseq -r 7169:7859 Carcharhinus_brevipinna_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part4.fasta
+seqkit subseq -r 7935:8102 Carcharhinus_brevipinna_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part5.fasta
+seqkit subseq -r 8093:8776 Carcharhinus_brevipinna_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part6.fasta
+seqkit subseq -r 8776:9561 Carcharhinus_brevipinna_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part7.fasta
+seqkit subseq -r 9634:9982 Carcharhinus_brevipinna_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part8.fasta
+seqkit subseq -r 10053:10349 Carcharhinus_brevipinna_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part9.fasta
+seqkit subseq -r 10343:11723 Carcharhinus_brevipinna_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part10.fasta
+seqkit subseq -r 11932:13761 Carcharhinus_brevipinna_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part11.fasta
+seqkit subseq -r 13757:14278 Carcharhinus_brevipinna_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part12.fasta
+seqkit subseq -r 14351:15495 Carcharhinus_brevipinna_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part13.fasta
+
+seqkit concat Carcharhinus_amboinensis_mitogenome_part1.fasta Carcharhinus_amboinensis_mitogenome_part2.fasta Carcharhinus_amboinensis_mitogenome_part3.fasta Carcharhinus_amboinensis_mitogenome_part4.fasta Carcharhinus_amboinensis_mitogenome_part5.fasta Carcharhinus_amboinensis_mitogenome_part6.fasta Carcharhinus_amboinensis_mitogenome_part7.fasta Carcharhinus_amboinensis_mitogenome_part8.fasta Carcharhinus_amboinensis_mitogenome_part9.fasta Carcharhinus_amboinensis_mitogenome_part10.fasta Carcharhinus_amboinensis_mitogenome_part11.fasta Carcharhinus_amboinensis_mitogenome_part12.fasta Carcharhinus_amboinensis_mitogenome_part13.fasta > Carcharhinus_amboinensis_mitogenomes_filtered.fasta
+
+rename Carcharhinus_amboinensis_mitogenomes_filtered.fasta to Carcharhinus_brevipinna_mitgenomes_filtered.fasta
+
+seqkit subseq -r 2842:3816 Carcharhinus_leucas_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part1.fasta
+seqkit subseq -r 4028:5072 Carcharhinus_leucas_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part2.fasta
+seqkit subseq -r 5461:7017 Carcharhinus_leucas_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part3.fasta
+seqkit subseq -r 7169:7859 Carcharhinus_leucas_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part4.fasta
+seqkit subseq -r 7935:8102 Carcharhinus_leucas_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part5.fasta
+seqkit subseq -r 8093:8776 Carcharhinus_leucas_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part6.fasta
+seqkit subseq -r 8776:9561 Carcharhinus_leucas_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part7.fasta
+seqkit subseq -r 9634:9982 Carcharhinus_leucas_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part8.fasta
+seqkit subseq -r 10053:10349 Carcharhinus_leucas_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part9.fasta
+seqkit subseq -r 10343:11723 Carcharhinus_leucas_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part10.fasta
+seqkit subseq -r 11932:13761 Carcharhinus_leucas_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part11.fasta
+seqkit subseq -r 13757:14278 Carcharhinus_leucas_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part12.fasta
+seqkit subseq -r 14351:15495 Carcharhinus_leucas_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part13.fasta
+
+seqkit concat Carcharhinus_amboinensis_mitogenome_part1.fasta Carcharhinus_amboinensis_mitogenome_part2.fasta Carcharhinus_amboinensis_mitogenome_part3.fasta Carcharhinus_amboinensis_mitogenome_part4.fasta Carcharhinus_amboinensis_mitogenome_part5.fasta Carcharhinus_amboinensis_mitogenome_part6.fasta Carcharhinus_amboinensis_mitogenome_part7.fasta Carcharhinus_amboinensis_mitogenome_part8.fasta Carcharhinus_amboinensis_mitogenome_part9.fasta Carcharhinus_amboinensis_mitogenome_part10.fasta Carcharhinus_amboinensis_mitogenome_part11.fasta Carcharhinus_amboinensis_mitogenome_part12.fasta Carcharhinus_amboinensis_mitogenome_part13.fasta > Carcharhinus_amboinensis_mitogenomes_filtered.fasta
+
+rename Carcharhinus_amboinensis_mitogenomes_filtered.fasta to Carcharhinus_leucas_mitogenomes_filtered.fasta
+
+seqkit subseq -r 28424:3818 Carcharhinus_longimanus_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part1.fasta
+seqkit subseq -r 4030:5074 Carcharhinus_longimanus_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part2.fasta
+seqkit subseq -r 5463:7019 Carcharhinus_longimanus_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part3.fasta
+seqkit subseq -r 7171:7861 Carcharhinus_longimanus_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part4.fasta
+seqkit subseq -r 7937:8104 Carcharhinus_longimanus_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part5.fasta
+seqkit subseq -r 8095:8778 Carcharhinus_longimanus_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part6.fasta
+seqkit subseq -r 8778:9563 Carcharhinus_longimanus_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part7.fasta
+seqkit subseq -r 9636:9984 Carcharhinus_longimanus_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part8.fasta
+seqkit subseq -r 10055:10351 Carcharhinus_longimanus_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part9.fasta
+seqkit subseq -r 10345:11725 Carcharhinus_longimanus_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part10.fasta
+seqkit subseq -r 11934:13763 Carcharhinus_longimanus_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part11.fasta
+seqkit subseq -r 13759:14280 Carcharhinus_longimanus_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part12.fasta
+seqkit subseq -r 14353:15497 Carcharhinus_longimanus_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part13.fasta
+
+seqkit concat Carcharhinus_amboinensis_mitogenome_part1.fasta Carcharhinus_amboinensis_mitogenome_part2.fasta Carcharhinus_amboinensis_mitogenome_part3.fasta Carcharhinus_amboinensis_mitogenome_part4.fasta Carcharhinus_amboinensis_mitogenome_part5.fasta Carcharhinus_amboinensis_mitogenome_part6.fasta Carcharhinus_amboinensis_mitogenome_part7.fasta Carcharhinus_amboinensis_mitogenome_part8.fasta Carcharhinus_amboinensis_mitogenome_part9.fasta Carcharhinus_amboinensis_mitogenome_part10.fasta Carcharhinus_amboinensis_mitogenome_part11.fasta Carcharhinus_amboinensis_mitogenome_part12.fasta Carcharhinus_amboinensis_mitogenome_part13.fasta > Carcharhinus_amboinensis_mitogenomes_filtered.fasta
+
+rename Carcharhinus_amboinensis_mitogenomes_filtered.fasta to Carcharhinus_longimanus_mitogenomes_filtered.fasta
+
+seqkit subseq -r 2839:3813 Carcharhinus_macloti_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part1.fasta
+seqkit subseq -r 4025:5069 Carcharhinus_macloti_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part2.fasta
+seqkit subseq -r 5458:7014 Carcharhinus_macloti_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part3.fasta
+seqkit subseq -r 7166:7856 Carcharhinus_macloti_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part4.fasta
+seqkit subseq -r 7932:8099 Carcharhinus_macloti_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part5.fasta
+seqkit subseq -r 8090:8773 Carcharhinus_macloti_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part6.fasta
+seqkit subseq -r 8773:9558 Carcharhinus_macloti_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part7.fasta
+seqkit subseq -r 9631:9979 Carcharhinus_macloti_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part8.fasta
+seqkit subseq -r 10050:10346 Carcharhinus_macloti_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part9.fasta
+seqkit subseq -r 10340:11720 Carcharhinus_macloti_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part10.fasta
+seqkit subseq -r 11929:13758 Carcharhinus_macloti_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part11.fasta
+seqkit subseq -r 13754:14275 Carcharhinus_macloti_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part12.fasta
+seqkit subseq -r 14348:15492 Carcharhinus_macloti_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part13.fasta
+
+seqkit concat Carcharhinus_amboinensis_mitogenome_part1.fasta Carcharhinus_amboinensis_mitogenome_part2.fasta Carcharhinus_amboinensis_mitogenome_part3.fasta Carcharhinus_amboinensis_mitogenome_part4.fasta Carcharhinus_amboinensis_mitogenome_part5.fasta Carcharhinus_amboinensis_mitogenome_part6.fasta Carcharhinus_amboinensis_mitogenome_part7.fasta Carcharhinus_amboinensis_mitogenome_part8.fasta Carcharhinus_amboinensis_mitogenome_part9.fasta Carcharhinus_amboinensis_mitogenome_part10.fasta Carcharhinus_amboinensis_mitogenome_part11.fasta Carcharhinus_amboinensis_mitogenome_part12.fasta Carcharhinus_amboinensis_mitogenome_part13.fasta > Carcharhinus_amboinensis_mitogenomes_filtered.fasta
+
+rename Carcharhinus_amboinensis_mitogenomes_filtered.fasta to Carcharhinus_macloti_mitogenomes_filtered.fasta
+
+seqkit subseq -r 2843:3817 Carcharhinus_melanopterus_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part1.fasta
+seqkit subseq -r 4029:5073 Carcharhinus_melanopterus_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part2.fasta
+seqkit subseq -r 5462:7018 Carcharhinus_melanopterus_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part3.fasta
+seqkit subseq -r 7170:7860 Carcharhinus_melanopterus_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part4.fasta
+seqkit subseq -r 7936:8103 Carcharhinus_melanopterus_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part5.fasta
+seqkit subseq -r 8094:8777 Carcharhinus_melanopterus_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part6.fasta
+seqkit subseq -r 8777:9562 Carcharhinus_melanopterus_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part7.fasta
+seqkit subseq -r 9635:9983 Carcharhinus_melanopterus_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part8.fasta
+seqkit subseq -r 10054:10350 Carcharhinus_melanopterus_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part9.fasta
+seqkit subseq -r 10344:11724 Carcharhinus_melanopterus_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part10.fasta
+seqkit subseq -r 11933:13762 Carcharhinus_melanopterus_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part11.fasta
+seqkit subseq -r 13758:14279 Carcharhinus_melanopterus_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part12.fasta
+seqkit subseq -r 14352:15496 Carcharhinus_melanopterus_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part13.fasta
+
+seqkit concat Carcharhinus_amboinensis_mitogenome_part1.fasta Carcharhinus_amboinensis_mitogenome_part2.fasta Carcharhinus_amboinensis_mitogenome_part3.fasta Carcharhinus_amboinensis_mitogenome_part4.fasta Carcharhinus_amboinensis_mitogenome_part5.fasta Carcharhinus_amboinensis_mitogenome_part6.fasta Carcharhinus_amboinensis_mitogenome_part7.fasta Carcharhinus_amboinensis_mitogenome_part8.fasta Carcharhinus_amboinensis_mitogenome_part9.fasta Carcharhinus_amboinensis_mitogenome_part10.fasta Carcharhinus_amboinensis_mitogenome_part11.fasta Carcharhinus_amboinensis_mitogenome_part12.fasta Carcharhinus_amboinensis_mitogenome_part13.fasta > Carcharhinus_amboinensis_mitogenomes_filtered.fasta
+
+rename Carcharhinus_amboinensis_mitogenomes_filtered.fasta to Carcharhinus_melanopterus_mitogenomes_filtered.fasta
+
+seqkit subseq -r 2844:3818 Carcharhinus_obscurus_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part1.fasta
+seqkit subseq -r 4030:5074 Carcharhinus_obscurus_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part2.fasta
+seqkit subseq -r 5463:7019 Carcharhinus_obscurus_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part3.fasta
+seqkit subseq -r 7171:7861 Carcharhinus_obscurus_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part4.fasta
+seqkit subseq -r 7937:8104 Carcharhinus_obscurus_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part5.fasta
+seqkit subseq -r 8095:8778 Carcharhinus_obscurus_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part6.fasta
+seqkit subseq -r 8778:9563 Carcharhinus_obscurus_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part7.fasta
+seqkit subseq -r 9636:9984 Carcharhinus_obscurus_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part8.fasta
+seqkit subseq -r 10055:10351 Carcharhinus_obscurus_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part9.fasta
+seqkit subseq -r 10345:11725 Carcharhinus_obscurus_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part10.fasta
+seqkit subseq -r 11934:13763 Carcharhinus_obscurus_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part11.fasta
+seqkit subseq -r 13759:14280 Carcharhinus_obscurus_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part12.fasta
+seqkit subseq -r 14353:15497 Carcharhinus_obscurus_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part13.fasta
+
+seqkit concat Carcharhinus_amboinensis_mitogenome_part1.fasta Carcharhinus_amboinensis_mitogenome_part2.fasta Carcharhinus_amboinensis_mitogenome_part3.fasta Carcharhinus_amboinensis_mitogenome_part4.fasta Carcharhinus_amboinensis_mitogenome_part5.fasta Carcharhinus_amboinensis_mitogenome_part6.fasta Carcharhinus_amboinensis_mitogenome_part7.fasta Carcharhinus_amboinensis_mitogenome_part8.fasta Carcharhinus_amboinensis_mitogenome_part9.fasta Carcharhinus_amboinensis_mitogenome_part10.fasta Carcharhinus_amboinensis_mitogenome_part11.fasta Carcharhinus_amboinensis_mitogenome_part12.fasta Carcharhinus_amboinensis_mitogenome_part13.fasta > Carcharhinus_amboinensis_mitogenomes_filtered.fasta
+
+rename Carcharhinus_amboinensis_mitogenomes_filtered.fasta to Carcharhinus_obscurus_mitogenomes_filtered.fasta
+
+seqkit subseq -r 2847:3821 Carcharhinus_plumbeus_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part1.fasta
+seqkit subseq -r 4033:5077 Carcharhinus_plumbeus_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part2.fasta
+seqkit subseq -r 5466:7022 Carcharhinus_plumbeus_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part3.fasta
+seqkit subseq -r 7174:7864 Carcharhinus_plumbeus_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part4.fasta
+seqkit subseq -r 7940:8107 Carcharhinus_plumbeus_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part5.fasta
+seqkit subseq -r 8098:8781 Carcharhinus_plumbeus_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part6.fasta
+seqkit subseq -r 8781:9566 Carcharhinus_plumbeus_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part7.fasta
+seqkit subseq -r 9639:9987 Carcharhinus_plumbeus_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part8.fasta
+seqkit subseq -r 10058:10354 Carcharhinus_plumbeus_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part9.fasta
+seqkit subseq -r 10348:11728 Carcharhinus_plumbeus_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part10.fasta
+seqkit subseq -r 11937:13766 Carcharhinus_plumbeus_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part11.fasta
+seqkit subseq -r 13762:14283 Carcharhinus_plumbeus_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part12.fasta
+seqkit subseq -r 14356:15500 Carcharhinus_plumbeus_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part13.fasta
+
+seqkit concat Carcharhinus_amboinensis_mitogenome_part1.fasta Carcharhinus_amboinensis_mitogenome_part2.fasta Carcharhinus_amboinensis_mitogenome_part3.fasta Carcharhinus_amboinensis_mitogenome_part4.fasta Carcharhinus_amboinensis_mitogenome_part5.fasta Carcharhinus_amboinensis_mitogenome_part6.fasta Carcharhinus_amboinensis_mitogenome_part7.fasta Carcharhinus_amboinensis_mitogenome_part8.fasta Carcharhinus_amboinensis_mitogenome_part9.fasta Carcharhinus_amboinensis_mitogenome_part10.fasta Carcharhinus_amboinensis_mitogenome_part11.fasta Carcharhinus_amboinensis_mitogenome_part12.fasta Carcharhinus_amboinensis_mitogenome_part13.fasta > Carcharhinus_amboinensis_mitogenomes_filtered.fasta
+
+rename Carcharhinus_amboinensis_mitogenomes_filtered.fasta to Carcharhinus_plumbeus_mitogenomes_filtered.fasta
+
+seqkit subseq -r 2845:3819 Carcharhinus_sorrah_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part1.fasta
+seqkit subseq -r 4031:5075 Carcharhinus_sorrah_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part2.fasta
+seqkit subseq -r 5464:7020 Carcharhinus_sorrah_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part3.fasta
+seqkit subseq -r 7172:7862 Carcharhinus_sorrah_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part4.fasta
+seqkit subseq -r 7938:8105 Carcharhinus_sorrah_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part5.fasta
+seqkit subseq -r 8096:8779 Carcharhinus_sorrah_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part6.fasta
+seqkit subseq -r 8779:9564 Carcharhinus_sorrah_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part7.fasta
+seqkit subseq -r 9637:9985 Carcharhinus_sorrah_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part8.fasta
+seqkit subseq -r 10056:10352 Carcharhinus_sorrah_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part9.fasta
+seqkit subseq -r 10346:11726 Carcharhinus_sorrah_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part10.fasta
+seqkit subseq -r 11935:13764 Carcharhinus_sorrah_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part11.fasta
+seqkit subseq -r 13760:14281 Carcharhinus_sorrah_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part12.fasta
+seqkit subseq -r 14354:15498 Carcharhinus_sorrah_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part13.fasta
+
+seqkit concat Carcharhinus_amboinensis_mitogenome_part1.fasta Carcharhinus_amboinensis_mitogenome_part2.fasta Carcharhinus_amboinensis_mitogenome_part3.fasta Carcharhinus_amboinensis_mitogenome_part4.fasta Carcharhinus_amboinensis_mitogenome_part5.fasta Carcharhinus_amboinensis_mitogenome_part6.fasta Carcharhinus_amboinensis_mitogenome_part7.fasta Carcharhinus_amboinensis_mitogenome_part8.fasta Carcharhinus_amboinensis_mitogenome_part9.fasta Carcharhinus_amboinensis_mitogenome_part10.fasta Carcharhinus_amboinensis_mitogenome_part11.fasta Carcharhinus_amboinensis_mitogenome_part12.fasta Carcharhinus_amboinensis_mitogenome_part13.fasta > Carcharhinus_amboinensis_mitogenomes_filtered.fasta
+
+rename Carcharhinus_amboinensis_mitogenomes_filtered.fasta to Carcharhinus_sorrah_mitogenomes_filtered.fasta
+
+seqkit subseq -r 2843:3817 Carcharhinus_tjutjot_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part1.fasta
+seqkit subseq -r 4029:5073 Carcharhinus_tjutjot_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part2.fasta
+seqkit subseq -r 5462:7018 Carcharhinus_tjutjot_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part3.fasta
+seqkit subseq -r 7170:7860 Carcharhinus_tjutjot_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part4.fasta
+seqkit subseq -r 7936:8103 Carcharhinus_tjutjot_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part5.fasta
+seqkit subseq -r 8094:8777 Carcharhinus_tjutjot_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part6.fasta
+seqkit subseq -r 8777:9562 Carcharhinus_tjutjot_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part7.fasta
+seqkit subseq -r 9635:9983 Carcharhinus_tjutjot_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part8.fasta
+seqkit subseq -r 10054:10350 Carcharhinus_tjutjot_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part9.fasta
+seqkit subseq -r 10344:11724 Carcharhinus_tjutjot_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part10.fasta
+seqkit subseq -r 11933:13762 Carcharhinus_tjutjot_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part11.fasta
+seqkit subseq -r 13758:14279 Carcharhinus_tjutjot_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part12.fasta
+seqkit subseq -r 14352:15496 Carcharhinus_tjutjot_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part13.fasta
+
+seqkit concat Carcharhinus_amboinensis_mitogenome_part1.fasta Carcharhinus_amboinensis_mitogenome_part2.fasta Carcharhinus_amboinensis_mitogenome_part3.fasta Carcharhinus_amboinensis_mitogenome_part4.fasta Carcharhinus_amboinensis_mitogenome_part5.fasta Carcharhinus_amboinensis_mitogenome_part6.fasta Carcharhinus_amboinensis_mitogenome_part7.fasta Carcharhinus_amboinensis_mitogenome_part8.fasta Carcharhinus_amboinensis_mitogenome_part9.fasta Carcharhinus_amboinensis_mitogenome_part10.fasta Carcharhinus_amboinensis_mitogenome_part11.fasta Carcharhinus_amboinensis_mitogenome_part12.fasta Carcharhinus_amboinensis_mitogenome_part13.fasta > Carcharhinus_amboinensis_mitogenomes_filtered.fasta
+
+rename Carcharhinus_amboinensis_mitogenomes_filtered.fasta to Carcharhinus_tjutjot_mitogenomes_filtered.fasta
+
+seqkit subseq -r 2847:3821 Carcharhinus_acronotus_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part1.fasta
+seqkit subseq -r 4033:5077 Carcharhinus_acronotus_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part2.fasta
+seqkit subseq -r 5466:7022 Carcharhinus_acronotus_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part3.fasta
+seqkit subseq -r 7174:7864 Carcharhinus_acronotus_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part4.fasta
+seqkit subseq -r 7940:8107 Carcharhinus_acronotus_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part5.fasta
+seqkit subseq -r 8098:8780 Carcharhinus_acronotus_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part6.fasta
+seqkit subseq -r 8781:9566 Carcharhinus_acronotus_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part7.fasta
+seqkit subseq -r 9639:9987 Carcharhinus_acronotus_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part8.fasta
+seqkit subseq -r 10058:10354 Carcharhinus_acronotus_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part9.fasta
+seqkit subseq -r 10348:11724 Carcharhinus_acronotus_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part10.fasta
+seqkit subseq -r 11937:13766 Carcharhinus_acronotus_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part11.fasta
+seqkit subseq -r 13762:14283 Carcharhinus_acronotus_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part12.fasta
+seqkit subseq -r 14356:15500 Carcharhinus_acronotus_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part13.fasta
+
+seqkit concat Carcharhinus_amboinensis_mitogenome_part1.fasta Carcharhinus_amboinensis_mitogenome_part2.fasta Carcharhinus_amboinensis_mitogenome_part3.fasta Carcharhinus_amboinensis_mitogenome_part4.fasta Carcharhinus_amboinensis_mitogenome_part5.fasta Carcharhinus_amboinensis_mitogenome_part6.fasta Carcharhinus_amboinensis_mitogenome_part7.fasta Carcharhinus_amboinensis_mitogenome_part8.fasta Carcharhinus_amboinensis_mitogenome_part9.fasta Carcharhinus_amboinensis_mitogenome_part10.fasta Carcharhinus_amboinensis_mitogenome_part11.fasta Carcharhinus_amboinensis_mitogenome_part12.fasta Carcharhinus_amboinensis_mitogenome_part13.fasta > Carcharhinus_amboinensis_mitogenomes_filtered.fasta
+
+rename Carcharhinus_amboinensis_mitogenomes_filtered.fasta to Carcharhinus_acronotus_mitogenomes_filtered.fasta
+
+seqkit subseq -r 2837:3810 Hemipristis_elongata_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part1.fasta
+seqkit subseq -r 4024:5068 Hemipristis_elongata_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part2.fasta
+seqkit subseq -r 5455:7011 Hemipristis_elongata_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part3.fasta
+seqkit subseq -r 7162:7852 Hemipristis_elongata_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part4.fasta
+seqkit subseq -r 7928:8095 Hemipristis_elongata_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part5.fasta
+seqkit subseq -r 8086:8769 Hemipristis_elongata_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part6.fasta
+seqkit subseq -r 8769:9554 Hemipristis_elongata_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part7.fasta
+seqkit subseq -r 9627:9975 Hemipristis_elongata_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part8.fasta
+seqkit subseq -r 10046:10342 Hemipristis_elongata_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part9.fasta
+seqkit subseq -r 10336:11713 Hemipristis_elongata_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part10.fasta
+seqkit subseq -r 11922:13751 Hemipristis_elongata_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part11.fasta
+seqkit subseq -r 13747:14268 Hemipristis_elongata_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part12.fasta
+seqkit subseq -r 14341:15485 Hemipristis_elongata_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part13.fasta
+
+seqkit concat Carcharhinus_amboinensis_mitogenome_part1.fasta Carcharhinus_amboinensis_mitogenome_part2.fasta Carcharhinus_amboinensis_mitogenome_part3.fasta Carcharhinus_amboinensis_mitogenome_part4.fasta Carcharhinus_amboinensis_mitogenome_part5.fasta Carcharhinus_amboinensis_mitogenome_part6.fasta Carcharhinus_amboinensis_mitogenome_part7.fasta Carcharhinus_amboinensis_mitogenome_part8.fasta Carcharhinus_amboinensis_mitogenome_part9.fasta Carcharhinus_amboinensis_mitogenome_part10.fasta Carcharhinus_amboinensis_mitogenome_part11.fasta Carcharhinus_amboinensis_mitogenome_part12.fasta Carcharhinus_amboinensis_mitogenome_part13.fasta > Hemipristis_elongata_mitogenomes_filtered.fasta
+
+seqkit subseq -r 2845:3819 Lamna_ditropis_mitogenome_outgroup.fasta > Carcharhinus_amboinensis_mitogenome_part1.fasta
+seqkit subseq -r 4030:5072 Lamna_ditropis_mitogenome_outgroup.fasta > Carcharhinus_amboinensis_mitogenome_part2.fasta
+seqkit subseq -r 5459:7012 Lamna_ditropis_mitogenome_outgroup.fasta > Carcharhinus_amboinensis_mitogenome_part3.fasta
+seqkit subseq -r 7164:7854 Lamna_ditropis_mitogenome_outgroup.fasta > Carcharhinus_amboinensis_mitogenome_part4.fasta
+seqkit subseq -r 7930:8097 Lamna_ditropis_mitogenome_outgroup.fasta > Carcharhinus_amboinensis_mitogenome_part5.fasta
+seqkit subseq -r 8088:8771 Lamna_ditropis_mitogenome_outgroup.fasta > Carcharhinus_amboinensis_mitogenome_part6.fasta
+seqkit subseq -r 8771:9556 Lamna_ditropis_mitogenome_outgroup.fasta > Carcharhinus_amboinensis_mitogenome_part7.fasta
+seqkit subseq -r 9629:9977 Lamna_ditropis_mitogenome_outgroup.fasta > Carcharhinus_amboinensis_mitogenome_part8.fasta
+seqkit subseq -r 10048:10344 Lamna_ditropis_mitogenome_outgroup.fasta > Carcharhinus_amboinensis_mitogenome_part9.fasta
+seqkit subseq -r 10338:11718 Lamna_ditropis_mitogenome_outgroup.fasta > Carcharhinus_amboinensis_mitogenome_part10.fasta
+seqkit subseq -r 11928:13757 Lamna_ditropis_mitogenome_outgroup.fasta > Carcharhinus_amboinensis_mitogenome_part11.fasta
+seqkit subseq -r 13753:14274 Lamna_ditropis_mitogenome_outgroup.fasta > Carcharhinus_amboinensis_mitogenome_part12.fasta
+seqkit subseq -r 14347:15491 Lamna_ditropis_mitogenome_outgroup.fasta > Carcharhinus_amboinensis_mitogenome_part13.fasta
+
+seqkit concat Carcharhinus_amboinensis_mitogenome_part1.fasta Carcharhinus_amboinensis_mitogenome_part2.fasta Carcharhinus_amboinensis_mitogenome_part3.fasta Carcharhinus_amboinensis_mitogenome_part4.fasta Carcharhinus_amboinensis_mitogenome_part5.fasta Carcharhinus_amboinensis_mitogenome_part6.fasta Carcharhinus_amboinensis_mitogenome_part7.fasta Carcharhinus_amboinensis_mitogenome_part8.fasta Carcharhinus_amboinensis_mitogenome_part9.fasta Carcharhinus_amboinensis_mitogenome_part10.fasta Carcharhinus_amboinensis_mitogenome_part11.fasta Carcharhinus_amboinensis_mitogenome_part12.fasta Carcharhinus_amboinensis_mitogenome_part13.fasta > Lamna_ditropis_mitogenomes_outgroup_filtered.fasta
+
+seqkit subseq -r 2843:3817 Loxodon_macrorhinus_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part1.fasta
+seqkit subseq -r 4030:5074 Loxodon_macrorhinus_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part2.fasta
+seqkit subseq -r 5462:7018 Loxodon_macrorhinus_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part3.fasta
+seqkit subseq -r 7170:7860 Loxodon_macrorhinus_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part4.fasta
+seqkit subseq -r 7936:8103 Loxodon_macrorhinus_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part5.fasta
+seqkit subseq -r 8094:8777 Loxodon_macrorhinus_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part6.fasta
+seqkit subseq -r 8777:9562 Loxodon_macrorhinus_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part7.fasta
+seqkit subseq -r 9635:9983 Loxodon_macrorhinus_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part8.fasta
+seqkit subseq -r 10054:10350 Loxodon_macrorhinus_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part9.fasta
+seqkit subseq -r 10344:11724 Loxodon_macrorhinus_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part10.fasta
+seqkit subseq -r 11933:13762 Loxodon_macrorhinus_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part11.fasta
+seqkit subseq -r 13758:14279 Loxodon_macrorhinus_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part12.fasta
+seqkit subseq -r 14352:15496 Loxodon_macrorhinus_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part13.fasta
+
+seqkit concat Carcharhinus_amboinensis_mitogenome_part1.fasta Carcharhinus_amboinensis_mitogenome_part2.fasta Carcharhinus_amboinensis_mitogenome_part3.fasta Carcharhinus_amboinensis_mitogenome_part4.fasta Carcharhinus_amboinensis_mitogenome_part5.fasta Carcharhinus_amboinensis_mitogenome_part6.fasta Carcharhinus_amboinensis_mitogenome_part7.fasta Carcharhinus_amboinensis_mitogenome_part8.fasta Carcharhinus_amboinensis_mitogenome_part9.fasta Carcharhinus_amboinensis_mitogenome_part10.fasta Carcharhinus_amboinensis_mitogenome_part11.fasta Carcharhinus_amboinensis_mitogenome_part12.fasta Carcharhinus_amboinensis_mitogenome_part13.fasta > Loxodon_macrorhinus_mitogenomes_filtered.fasta
+
+seqkit subseq -r 2841:3815 PAfricanum_final_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part1.fasta
+seqkit subseq -r 4031:5077 PAfricanum_final_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part2.fasta
+seqkit subseq -r 5463:7016 PAfricanum_final_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part3.fasta
+seqkit subseq -r 7166:7870 PAfricanum_final_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part4.fasta
+seqkit subseq -r 7932:8087 PAfricanum_final_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part5.fasta
+seqkit subseq -r 8090:8773 PAfricanum_final_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part6.fasta
+seqkit subseq -r 8773:9558 PAfricanum_final_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part7.fasta
+seqkit subseq -r 9631:9981 PAfricanum_final_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part8.fasta
+seqkit subseq -r 10050:10346 PAfricanum_final_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part9.fasta
+seqkit subseq -r 10340:11713 PAfricanum_final_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part10.fasta
+seqkit subseq -r 11929:13698 PAfricanum_final_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part11.fasta
+seqkit subseq -r 137887:14273 PAfricanum_final_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part12.fasta
+seqkit subseq -r 14346:15488 PAfricanum_final_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part13.fasta
+
+seqkit concat Carcharhinus_amboinensis_mitogenome_part1.fasta Carcharhinus_amboinensis_mitogenome_part2.fasta Carcharhinus_amboinensis_mitogenome_part3.fasta Carcharhinus_amboinensis_mitogenome_part4.fasta Carcharhinus_amboinensis_mitogenome_part5.fasta Carcharhinus_amboinensis_mitogenome_part6.fasta Carcharhinus_amboinensis_mitogenome_part7.fasta Carcharhinus_amboinensis_mitogenome_part8.fasta Carcharhinus_amboinensis_mitogenome_part9.fasta Carcharhinus_amboinensis_mitogenome_part10.fasta Carcharhinus_amboinensis_mitogenome_part11.fasta Carcharhinus_amboinensis_mitogenome_part12.fasta Carcharhinus_amboinensis_mitogenome_part13.fasta > PAfricanum_final_mitogenomes_filtered.fasta
+
+seqkit subseq -r 1:975 Scyliorhinus_canicula_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part1.fasta
+seqkit subseq -r 1193:2239 Scyliorhinus_canicula_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part2.fasta
+seqkit subseq -r 2627:4180 Scyliorhinus_canicula_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part3.fasta
+seqkit subseq -r 4334:5024 Scyliorhinus_canicula_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part4.fasta
+seqkit subseq -r 5100:5267 Scyliorhinus_canicula_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part5.fasta
+seqkit subseq -r 5258:5941 Scyliorhinus_canicula_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part6.fasta
+seqkit subseq -r 5941:6726 Scyliorhinus_canicula_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part7.fasta
+seqkit subseq -r 6799:7149 Scyliorhinus_canicula_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part8.fasta
+seqkit subseq -r 7218:7514 Scyliorhinus_canicula_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part9.fasta
+seqkit subseq -r 7508:8888 Scyliorhinus_canicula_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part10.fasta
+seqkit subseq -r 9097:10926 Scyliorhinus_canicula_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part11.fasta
+seqkit subseq -r 10923:11444 Scyliorhinus_canicula_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part12.fasta
+seqkit subseq -r 11517:12660 Scyliorhinus_canicula_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part13.fasta
+
+seqkit concat Carcharhinus_amboinensis_mitogenome_part1.fasta Carcharhinus_amboinensis_mitogenome_part2.fasta Carcharhinus_amboinensis_mitogenome_part3.fasta Carcharhinus_amboinensis_mitogenome_part4.fasta Carcharhinus_amboinensis_mitogenome_part5.fasta Carcharhinus_amboinensis_mitogenome_part6.fasta Carcharhinus_amboinensis_mitogenome_part7.fasta Carcharhinus_amboinensis_mitogenome_part8.fasta Carcharhinus_amboinensis_mitogenome_part9.fasta Carcharhinus_amboinensis_mitogenome_part10.fasta Carcharhinus_amboinensis_mitogenome_part11.fasta Carcharhinus_amboinensis_mitogenome_part12.fasta Carcharhinus_amboinensis_mitogenome_part13.fasta > Scyliorhinus_canicula_mitogenomes_filtered.fasta
+
+seqkit subseq -r 2843:3817 Sphyrna_tiburo_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part1.fasta
+seqkit subseq -r 4029:5073 Sphyrna_tiburo_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part2.fasta
+seqkit subseq -r 5460:7016 Sphyrna_tiburo_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part3.fasta
+seqkit subseq -r 7168:7858 Sphyrna_tiburo_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part4.fasta
+seqkit subseq -r 7934:8101 Sphyrna_tiburo_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part5.fasta
+seqkit subseq -r 8092:8775 Sphyrna_tiburo_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part6.fasta
+seqkit subseq -r 8775:9560 Sphyrna_tiburo_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part7.fasta
+seqkit subseq -r 9633:9981 Sphyrna_tiburo_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part8.fasta
+seqkit subseq -r 10052:10348 Sphyrna_tiburo_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part9.fasta
+seqkit subseq -r 10342:11722 Sphyrna_tiburo_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part10.fasta
+seqkit subseq -r 11931:13760 Sphyrna_tiburo_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part11.fasta
+seqkit subseq -r 13756:14277 Sphyrna_tiburo_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part12.fasta
+seqkit subseq -r 14350:15494 Sphyrna_tiburo_mitogenome.fasta > Carcharhinus_amboinensis_mitogenome_part13.fasta
+
+seqkit concat Carcharhinus_amboinensis_mitogenome_part1.fasta Carcharhinus_amboinensis_mitogenome_part2.fasta Carcharhinus_amboinensis_mitogenome_part3.fasta Carcharhinus_amboinensis_mitogenome_part4.fasta Carcharhinus_amboinensis_mitogenome_part5.fasta Carcharhinus_amboinensis_mitogenome_part6.fasta Carcharhinus_amboinensis_mitogenome_part7.fasta Carcharhinus_amboinensis_mitogenome_part8.fasta Carcharhinus_amboinensis_mitogenome_part9.fasta Carcharhinus_amboinensis_mitogenome_part10.fasta Carcharhinus_amboinensis_mitogenome_part11.fasta Carcharhinus_amboinensis_mitogenome_part12.fasta Carcharhinus_amboinensis_mitogenome_part13.fasta > Sphyrna_tiburo_mitogenomes_filtered.fasta
+
+
+
+Align sequences
+
+cat /mnt/lustre/users/ksekane/alignment/*.fasta > all_mitogenomes.fasta
+
+module load chpc/BIOMODULES
+module load mafft/7.453
+
+
+mafft --auto --adjustdirectionaccurately input.fasta > aligned.fasta
+
+Build trees using Bayesian Inference on MrBayes based on geography
+
+Method/Script
+
+alias qsubi="qsub -X -I -l select=1:ncpus=24:mpiprocs=24 -q serial -P CBBI1661 -l walltime=1:00:00"
+qsubi
+
+cd /mnt/lustre/users/ksekane/
+
+#convert fasta file of aligned sequences to a nexus file as mrbayes requires a nexus file as input:
+module load emboss/6.6.0
+ 
+seqret -sequence aligned_sequences.fasta -outseq aligned_sequences1.nex -osformat nexus
+
+At the end of nexus file add "begin mrbayes;
+    lset nst=6 rates=gamma;
+	set autoclose=yes nowarn=yes;
+   outgroup Outgroup;
+    mcmc nruns=2 ngen=2000000 samplefreq=10000 printfreq=10000 diagnfreq=10000 nchains=4;
+    sump burnin=500000;
+    sumt burnin=500000;
+end;" and save the file
+
+module load mrbayes/3.2.6
+mb aligned_sequences1.nex
+
+Use MrBayes output:
+Check Potential Scale Reduction Factor (PSRF) ~ 1.00.
+Check average standard deviation of split frequencies (ASDSF) between runs — <0.01 is good.
+Export parameter traces and open in Tracer to check ESS (>200).
+ 
+Results
+received a consensus tree file
+
+Way forward
+Will put this file into figtree and Interactive tree of life (iTOL)
+
+Method (Figtree visualiser)
+Download FigTree
+Put the consensus tree in Figtee
+
+Results
+Received a phylogenetic tree
+
+Method (iTOL visualiser)
+Open iTOL on google
+Upload consensus tree
+
+Results
+Received a phylogenetic tree 
