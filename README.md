@@ -54,7 +54,7 @@ cd Mitogenome-assembly-and-annotation
 - The retrieved mitogenome of the pyjama shark is 16 692 bp with 13 protein coding genes, 2 rRNAs, 22 tRNAs and a GC content of 39%. As expected, pyjama sharks clustered in the order Carcharhiniformes within the Scyliorhinidae family, and was sister-species to Poroderma pantherinum. The pyjama shark mitogenome along with the reconstruction of its evolutionary relationships, and the estimation of its divergence time, may be used as a molecular tool in conjunction with its nuclear data and ecological data to investigate population structure within the different populations of the pyjama shark. This will aid in assessing the pyjama shark populations’ risk of extinction and their ability to adapt in the face of rapid oceanographic climate change and the threat of fisheries. This study produced the first mitogenome sequence for this species, contributing to the continued management and conservation of this endemic catshark.
 
 #Author
-Lehlohonolo Karabo Sekane
+- Lehlohonolo Karabo Sekane
    
 
 
